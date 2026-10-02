@@ -1,7 +1,29 @@
 # Triagem de Propostas — AgDev
-# Skill Claude + servidor MCP Python para triagem determinística de crédito rural.
+Skill Claude + servidor MCP Python para triagem determinística de crédito rural.
 
-## Pré-requisitos
+> 🌐 **Servidor MCP Online (Pronto para Uso em Teste):**  
+> Um servidor MCP já está implantado e disponível na nuvem para avaliação imediata:  
+> - **Endpoint:** `https://mcp-triagem.anotae.app.br/mcp`  
+> - **Transporte:** **Streamable HTTP** (padrão recomendado pela Anthropic)  
+> - **Autenticação:** **Sem autenticação (None)** *(aberto temporariamente para facilitar a avaliação deste teste prático)*  
+> - **Healthcheck no navegador:** [https://mcp-triagem.anotae.app.br/](https://mcp-triagem.anotae.app.br/)
+
+---
+
+## Como Conectar no Claude Web (claude.ai)
+
+1. No **Claude Web**, acesse **Customize** ➔ aba **Connectors** (ou clique em **`+ Add`** ➔ **Add custom connector**).
+2. Preencha:
+   - **Nome:** `triagem-proposta` (ou `triagem-agdev`)
+   - **URL:** `https://mcp-triagem.anotae.app.br/mcp`
+3. Ao avançar (ou em *Continue anyway*):
+   - **Transport:** `Streamable HTTP`
+   - **Authentication:** `None` (sem autenticação)
+4. Pronto! Abra um novo chat no Claude e trie propostas chamando a ferramenta `triar_proposta`.
+
+---
+
+## Pré-requisitos (Execução Local)
 
 - Python 3.11+
 - (opcional) [uv](https://github.com/astral-sh/uv) — acelera a instalação
@@ -47,9 +69,9 @@ python -m triagem_proposta.cli --json "{\"id\":\"P-001\",\"area_degradada_ha\":8
 
 ## Servidor MCP (Claude Desktop e Claude Code)
 
-O servidor expõe a ferramenta determinística `triar_proposta`. A integração funciona no **Claude Desktop** e no **Claude Code (CLI)**.
-
-> **Nota sobre o Claude Web (claude.ai no navegador):** O Claude Web não tem acesso direto a processos locais via `stdio`. Para usá-lo na nuvem, utilize a CLI local para gerar o parecer ou envie a proposta em texto.
+O servidor expõe a ferramenta determinística `triar_proposta`. Você pode conectá-lo de duas formas:
+1. **Conectando ao servidor em nuvem já publicado:** `https://mcp-triagem.anotae.app.br/mcp` (sem precisar rodar nada local).
+2. **Rodando localmente:** via interpretador Python local.
 
 ---
 
@@ -62,23 +84,35 @@ O servidor expõe a ferramenta determinística `triar_proposta`. A integração 
   - **macOS:** Abra `~/Library/Application Support/Claude/claude_desktop_config.json`.
 
 #### 2. Cole a configuração
-Adicione o servidor dentro da chave `"mcpServers"`. 
 
-> ⚠️ **Atenção no Windows (Barras no caminho):** No formato JSON, barras invertidas (`\`) causam erro de sintaxe. Use barras normais (`/`) ou barras duplas (`\\`).
-
-Exemplo pronto (ajuste para o seu caminho onde o projeto está salvo, ex: `D:/agdev`):
-
+**A) Para usar o Servidor Online na Nuvem (Recomendado):**
 ```json
 {
   "mcpServers": {
     "triagem-proposta": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://mcp-triagem.anotae.app.br/mcp"
+      ]
+    }
+  }
+}
+```
+
+**B) Ou para usar o interpretador Python Local:**
+> ⚠️ **Atenção no Windows (Barras no caminho):** No formato JSON, use barras normais (`/`) ou barras duplas (`\\`).
+```json
+{
+  "mcpServers": {
+    "triagem-proposta-local": {
       "command": "D:/agdev/.venv/Scripts/python.exe",
       "args": ["-m", "triagem_proposta.server"]
     }
   }
 }
 ```
-
 *(No macOS/Linux, substitua o comando por `/caminho/para/agdev/.venv/bin/python`).*
 
 #### 3. Reinicie o Claude Desktop
@@ -94,11 +128,14 @@ Feche completamente o aplicativo e abra-o novamente.
 
 ### Opção 2: Configuração no Claude Code (CLI)
 
-Se você utiliza o **Claude Code** no terminal, não precisa editar arquivos JSON manualmente. Basta rodar o comando:
+No terminal, adicione diretamente:
 
 ```bash
-# No diretório do projeto:
-claude mcp add triagem-proposta -- .venv/Scripts/python.exe -m triagem_proposta.server
+# Conectando ao servidor em nuvem:
+claude mcp add triagem-proposta -- npx -y mcp-remote https://mcp-triagem.anotae.app.br/mcp
+
+# Ou conectando localmente:
+claude mcp add triagem-proposta-local -- .venv/Scripts/python.exe -m triagem_proposta.server
 ```
 
 Para verificar se foi reconhecido:
@@ -135,7 +172,19 @@ examples/             # JSON do enunciado
 
 Conflito: **RECUSADA prevalece sobre REVISÃO HUMANA**; todos os motivos são listados.
 
+## Execução via Docker (Contêiner)
+
+Para rodar o servidor MCP encapsulado em contêiner com suporte a rede (**Streamable HTTP** na porta 8001/8000):
+
+```bash
+docker compose up -d --build
+```
+
+O endpoint MCP fica disponível em `http://localhost:8001/mcp` (e em produção via Cloudflare em `https://mcp-triagem.anotae.app.br/mcp`).  
+Um endpoint informativo de healthcheck responde em `http://localhost:8001/`.
+
 ## Documentação
 
 - [SKILL.md](SKILL.md) — quando usar a skill
 - [DESIGN.md](DESIGN.md) — revisão humana, dados reais, versionamento e adoção
+- [DEPLOY_ORACLE_CLOUD.md](doc/DEPLOY_ORACLE_CLOUD.md) — guia completo de deploy em contêiner na Oracle Cloud (OCI)

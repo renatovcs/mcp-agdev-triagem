@@ -35,12 +35,13 @@ O núcleo permanece **determinístico**: integrações alimentam o JSON; a skill
 4. Pareceres antigos guardam `regra` + texto — replay histórico possível.
 5. Feature flag só se coexistirem duas políticas; default = uma versão ativa por ambiente.
 
-## 4. Adoção por analistas não técnicos
+## 4. Adoção por analistas não técnicos e Deploy em Nuvem
 
-- No Claude: “Triar proposta” + colar JSON (ou arquivo) → skill chama a tool MCP.
-- Saída = card Markdown (título, parecer, motivos, checklist de pendências) → copia para o board.
-- Confiança: regras **em código testado**, não “opinião do modelo”; exemplos P-001…P-005 no README; pareceres só SEGUE / RECUSADA / REVISÃO HUMANA.
-- Treino curto: interpretar os três pareceres e o que fazer em cada pendência — sem precisar ler Python.
+- **Acesso direto no Claude Web / Desktop:** O servidor MCP está implantado na Oracle Cloud em contêiner Docker, atrás do proxy Cloudflare com SSL: `https://mcp-triagem.anotae.app.br/mcp`.
+- **Protocolo Moderno:** Utiliza **Streamable HTTP** (novo padrão oficial da especificação MCP), eliminando as limitações e a deprecação do SSE.
+- **Autenticação (Teste vs Produção):** Para a avaliação deste teste prático, o servidor opera **sem autenticação (None)**, permitindo que os avaliadores conectem e testem de imediato no Claude sem necessidade de credenciais. Em produção real na AgDev, o endpoint é protegido via **OAuth 2.0** (integrado ao Cloudflare Zero Trust / IdP corporativo) ou token Bearer.
+- **Operação pelo Analista:** No Claude, o analista cola a proposta em JSON ➔ a skill aciona a tool determinística ➔ saída em card Markdown padronizado com parecer, motivos e pendências.
+- **Confiança:** As regras rodam **em código Python testado**, eliminando alucinações do modelo de linguagem.
 
 ## Uso de IA neste entregável
 
