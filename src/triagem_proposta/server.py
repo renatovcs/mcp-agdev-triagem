@@ -41,6 +41,24 @@ def triar_proposta_tool(proposta: dict[str, Any] | str) -> dict[str, Any]:
     return triar_e_formatar(dados)
 
 
+# Rota informativa na raiz para checagem rápida no navegador
+from starlette.responses import JSONResponse
+from starlette.routing import Route
+
+mcp._custom_starlette_routes.append(
+    Route(
+        "/",
+        lambda req: JSONResponse({
+            "status": "online",
+            "server": "triagem-proposta-mcp",
+            "endpoint": "/mcp",
+            "protocol": "streamable-http",
+        }),
+        methods=["GET"],
+    )
+)
+
+
 def main(argv: list[str] | None = None) -> None:
     """Entrypoint do servidor MCP (suporta stdio, sse e streamable-http)."""
     import argparse

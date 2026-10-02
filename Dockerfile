@@ -4,7 +4,7 @@ FROM python:3.12-slim
 # Variáveis de ambiente
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    MCP_TRANSPORT=sse \
+    MCP_TRANSPORT=streamable-http \
     MCP_HOST=0.0.0.0 \
     MCP_PORT=8000
 
@@ -27,5 +27,5 @@ USER appuser
 # Porta padrão de escuta para transporte SSE/HTTP
 EXPOSE 8000
 
-# Executa o servidor MCP no modo SSE
-CMD ["python", "-m", "triagem_proposta.server", "--transport", "sse", "--host", "0.0.0.0", "--port", "8000"]
+# Executa o servidor MCP (utiliza variáveis de ambiente MCP_TRANSPORT, MCP_HOST, MCP_PORT)
+CMD ["python", "-m", "triagem_proposta.server"]
