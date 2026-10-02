@@ -118,3 +118,20 @@ def test_alerta_em_formato_brasileiro():
     resultado = triar_proposta(dados)
     assert resultado.parecer is Parecer.RECUSADA
     assert any(m.regra == "R2" for m in resultado.motivos)
+
+
+def test_normalizacao_chaves_tolerante_a_espacos_e_maiusculas():
+    """Tolerância a 'area degradada_ha' com espaço e maiúsculas."""
+    dados = {
+        "ID": "P-002",
+        "area degradada_ha": 60,
+        "area_matricula_ha": 300,
+        "area_car_ha": 298,
+        "alerta_desmatamento": None,
+        "situacao_car": "Ativo",
+        "situacao_cadastral": "Regular",
+    }
+    resultado = triar_proposta(dados)
+    assert resultado.parecer is Parecer.RECUSADA
+    assert any(m.regra == "R1" for m in resultado.motivos)
+    assert not any(m.regra == "R6" for m in resultado.motivos)

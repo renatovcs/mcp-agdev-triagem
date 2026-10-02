@@ -48,31 +48,54 @@ def _ok(ausentes: set[str], *campos: str) -> bool:
     return all(campo not in ausentes for campo in campos)
 
 
+def normalizar_payload(dados: Mapping[str, Any]) -> dict[str, Any]:
+    """Higieniza e normaliza as chaves do payload para tolerar variações comuns.
+
+    Substitui espaços por underscores, normaliza para minúsculas e mapeia aliases frequentes
+    (ex: 'area degradada_ha' -> 'area_degradada_ha').
+    """
+    aliases = {
+        "area_degradada": "area_degradada_ha",
+        "area_matricula": "area_matricula_ha",
+        "area_car": "area_car_ha",
+        "alerta": "alerta_desmatamento",
+    }
+    normalizado: dict[str, Any] = {}
+    for chave, valor in dados.items():
+        chave_limpa = str(chave).strip().replace(" ", "_").lower()
+        chave_oficial = aliases.get(chave_limpa, chave_limpa)
+        normalizado[chave_oficial] = valor
+    return normalizado
+
+
 def triar_proposta(dados: Mapping[str, Any]) -> ResultadoTriagem:
     """Aplica R1–R6 acumulando todos os motivos e resolve o parecer final.
 
     Continua o processamento mesmo após encontrar RECUSADA ou REVISÃO HUMANA.
     Regras com dependência ausente são puladas (R6 já identifica o campo).
     """
+    dados_norm = normalizar_payload(dados)
     motivos: list[Motivo] = []
-    ausentes_lista = campos_ausentes(dados)
+    ausentes_lista = campos_ausentes(dados_norm)
     ausentes = set(ausentes_lista)
 
-    motivos.extend(aplicar_r6(dados))
+    motivos.extend(aplicar_r6(dados_norm))
 
     # Defaults só para montar o objeto; regras dependentes de campo ausente não rodam.
     try:
         proposta = construir_proposta(
             {
-                "id": dados.get("id") or "DESCONHECIDO",
-                "area_degradada_ha": dados.get("area_degradada_ha", 0),
-                "area_matricula_ha": dados.get("area_matricula_ha", 0),
-                "area_car_ha": dados.get("area_car_ha", 0),
+                "id": dados_norm.get("id") or "DESCONHECIDO",
+                "area_degradada_ha": dados_norm.get("area_degradada_ha", 0),
+                "area_matricula_ha": dados_norm.get("area_matricula_ha", 0),
+                "area_car_ha": dados_norm.get("area_car_ha", 0),
                 "alerta_desmatamento": (
-                    dados["alerta_desmatamento"] if "alerta_desmatamento" in dados else None
+                    dados_norm["alerta_desmatamento"]
+                    if "alerta_desmatamento" in dados_norm
+                    else None
                 ),
-                "situacao_car": dados.get("situacao_car") or "Ativo",
-                "situacao_cadastral": dados.get("situacao_cadastral") or "Regular",
+                "situacao_car": dados_norm.get("situacao_car") or "Ativo",
+                "situacao_cadastral": dados_norm.get("situacao_cadastral") or "Regular",
             }
         )
     except (TypeError, ValueError):
@@ -90,7 +113,7 @@ def triar_proposta(dados: Mapping[str, Any]) -> ResultadoTriagem:
         if _ok(ausentes, "area_matricula_ha", "area_car_ha"):
             motivos.extend(aplicar_r5(proposta))
 
-    proposta_id = str(dados.get("id") or "DESCONHECIDO").strip() or "DESCONHECIDO"
+    proposta_id = str(dados_norm.get("id") or "DESCONHECIDO").strip() or "DESCONHECIDO"
     return ResultadoTriagem(
         proposta_id=proposta_id,
         parecer=resolver_parecer(motivos),

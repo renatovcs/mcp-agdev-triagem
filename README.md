@@ -12,14 +12,35 @@ Skill Claude + servidor MCP Python para triagem determinística de crédito rura
 
 ## Como Conectar no Claude Web (claude.ai)
 
-1. No **Claude Web**, acesse **Customize** ➔ aba **Connectors** (ou clique em **`+ Add`** ➔ **Add custom connector**).
-2. Preencha:
-   - **Nome:** `triagem-proposta` (ou `triagem-agdev`)
+A melhor prática para agentes no Claude Web é combinar uma **Skill (Instrução/Guardrail)** com um **Conector (MCP Tool)**:
+- **O Conector (MCP Tool):** Executa o código Python determinístico na nuvem.
+- **A Skill (Instrução):** Atua como governança, garantindo que o Claude **nunca alucine** regras de negócio e acione obrigatoriamente a ferramenta `triar_proposta`.
+
+### Passo 1: Cadastrar o Conector MCP
+1. Acesse [claude.ai](https://claude.ai) ➔ menu lateral **Customize** ➔ aba **Connectors**.
+2. Clique no botão **`+ Add ▾`** ➔ **Add custom connector**.
+3. Preencha:
+   - **Name:** `triagem-proposta` (ou `triagem-agdev`)
    - **URL:** `https://mcp-triagem.anotae.app.br/mcp`
-3. Ao avançar (ou em *Continue anyway*):
+4. Ao avançar (ou em *Continue anyway*):
    - **Transport:** `Streamable HTTP`
-   - **Authentication:** `None` (sem autenticação)
-4. Pronto! Abra um novo chat no Claude e trie propostas chamando a ferramenta `triar_proposta`.
+   - **Authentication:** `None` (sem autenticação para testes)
+5. Salve o conector.
+
+### Passo 2: Cadastrar a Skill de Orquestração
+1. Na mesma tela de **Customize**, clique na aba **Skills** ➔ botão **`+ Add ▾`** ➔ **Add skill**.
+2. Preencha o nome: `triagem-proposta`.
+3. No conteúdo da instrução da Skill (`SKILL.md`), cole a diretriz:
+   ```text
+   Você atua na triagem de propostas da AgDev. Quando o usuário fornecer dados de uma proposta (em JSON ou texto), acione obrigatoriamente a ferramenta triar_proposta. Não avalie as regras de negócio por conta própria. Aguarde o retorno da ferramenta e apresente ao usuário exatamente o resumo em Markdown gerado por ela, contendo título, parecer, motivos e pendências.
+   ```
+4. Salve e deixe a Skill ativada.
+
+### Passo 3: Utilização pelo Analista
+Abra um novo chat (`+ New`) e envie a proposta (em JSON ou texto livre):
+> *"Trie a proposta P-001: `{"id": "P-001", "area_degradada_ha": 850, "area_matricula_ha": 1200, "area_car_ha": 1190, "alerta_desmatamento": null, "situacao_car": "Ativo", "situacao_cadastral": "Regular"}`"*
+
+O Claude ativará a Skill, acionará a ferramenta remota e entregará o card Markdown com parecer determinístico.
 
 ---
 
@@ -67,25 +88,19 @@ P-005	REVISÃO HUMANA
 python -m triagem_proposta.cli --json "{\"id\":\"P-001\",\"area_degradada_ha\":850,\"area_matricula_ha\":1200,\"area_car_ha\":1190,\"alerta_desmatamento\":null,\"situacao_car\":\"Ativo\",\"situacao_cadastral\":\"Regular\"}"
 ```
 
-## Servidor MCP (Claude Desktop e Claude Code)
-
-O servidor expõe a ferramenta determinística `triar_proposta`. Você pode conectá-lo de duas formas:
-1. **Conectando ao servidor em nuvem já publicado:** `https://mcp-triagem.anotae.app.br/mcp` (sem precisar rodar nada local).
-2. **Rodando localmente:** via interpretador Python local.
-
 ---
 
-### Opção 1: Configuração no Claude Desktop (Passo a Passo)
+## Configuração no Claude Desktop
 
-#### 1. Abra o arquivo de configuração
+### 1. Abra o arquivo de configuração
 - **Pelo próprio aplicativo:** Abra o Claude Desktop, clique no menu superior esquerdo (ou ícone de engrenagem) ➔ **Settings** ➔ **Developer** ➔ clique no botão **Edit Config**.
 - **Ou pelo Explorador de Arquivos:**
   - **Windows:** Pressione `Win + R`, digite `%APPDATA%\Claude` e abra o arquivo `claude_desktop_config.json` com o Bloco de Notas ou VS Code.
   - **macOS:** Abra `~/Library/Application Support/Claude/claude_desktop_config.json`.
 
-#### 2. Cole a configuração
+### 2. Cole a configuração
 
-**A) Para usar o Servidor Online na Nuvem (Recomendado):**
+**A) Conectando ao Servidor Online na Nuvem (Recomendado):**
 ```json
 {
   "mcpServers": {
@@ -101,7 +116,7 @@ O servidor expõe a ferramenta determinística `triar_proposta`. Você pode cone
 }
 ```
 
-**B) Ou para usar o interpretador Python Local:**
+**B) Ou rodando o Python Local:**
 > ⚠️ **Atenção no Windows (Barras no caminho):** No formato JSON, use barras normais (`/`) ou barras duplas (`\\`).
 ```json
 {
@@ -115,20 +130,17 @@ O servidor expõe a ferramenta determinística `triar_proposta`. Você pode cone
 ```
 *(No macOS/Linux, substitua o comando por `/caminho/para/agdev/.venv/bin/python`).*
 
-#### 3. Reinicie o Claude Desktop
+### 3. Reinicie o Claude Desktop
 Feche completamente o aplicativo e abra-o novamente.
 
-#### 4. Como conferir se deu certo (Validação Visual)
-1. No canto inferior direito da caixa de mensagem de um novo chat, procure pelo ícone de **ferramentas/martelo** (🔨).
-2. Clique nele e verifique se a ferramenta `triar_proposta` está listada e habilitada.
-3. Teste enviando uma mensagem simples:
-   > *"Por favor, trie a proposta P-001 usando a ferramenta triar_proposta: `{"id": "P-001", "area_degradada_ha": 850, "area_matricula_ha": 1200, "area_car_ha": 1190, "alerta_desmatamento": null, "situacao_car": "Ativo", "situacao_cadastral": "Regular"}`"*
+### 4. Validação Visual
+No canto inferior direito da caixa de mensagem de um novo chat, verifique o ícone de **ferramentas/martelo** (🔨) com a tool `triar_proposta`.
 
 ---
 
-### Opção 2: Configuração no Claude Code (CLI)
+## Configuração no Claude Code (CLI)
 
-No terminal, adicione diretamente:
+No terminal:
 
 ```bash
 # Conectando ao servidor em nuvem:
@@ -136,11 +148,6 @@ claude mcp add triagem-proposta -- npx -y mcp-remote https://mcp-triagem.anotae.
 
 # Ou conectando localmente:
 claude mcp add triagem-proposta-local -- .venv/Scripts/python.exe -m triagem_proposta.server
-```
-
-Para verificar se foi reconhecido:
-```bash
-claude mcp list
 ```
 
 ---
