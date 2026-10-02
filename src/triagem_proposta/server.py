@@ -68,8 +68,14 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
 
     if args.transport in {"sse", "streamable-http"}:
+        from mcp.server.transport_security import TransportSecuritySettings
+
         mcp.settings.host = args.host
         mcp.settings.port = args.port
+        # Permite tráfego vindo de domínios externos e proxies reversos (Cloudflare, Nginx, etc.)
+        mcp.settings.transport_security = TransportSecuritySettings(
+            enable_dns_rebinding_protection=False
+        )
 
     mcp.run(transport=args.transport)
 

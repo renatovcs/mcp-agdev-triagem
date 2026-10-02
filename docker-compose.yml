@@ -7,8 +7,8 @@ services:
     container_name: triagem-mcp-server
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8001:8000"
     environment:
-      - MCP_TRANSPORT=sse
+      - MCP_TRANSPORT=streamable-http
       - MCP_HOST=0.0.0.0
       - MCP_PORT=8000
