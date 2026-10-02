@@ -41,9 +41,37 @@ def triar_proposta_tool(proposta: dict[str, Any] | str) -> dict[str, Any]:
     return triar_e_formatar(dados)
 
 
-def main() -> None:
-    """Entrypoint do servidor MCP via stdio (Claude Desktop / Claude Code)."""
-    mcp.run(transport="stdio")
+def main(argv: list[str] | None = None) -> None:
+    """Entrypoint do servidor MCP (suporta stdio, sse e streamable-http)."""
+    import argparse
+    import os
+
+    parser = argparse.ArgumentParser(description="Servidor MCP triagem-proposta")
+    parser.add_argument(
+        "--transport",
+        choices=["stdio", "sse", "streamable-http"],
+        default=os.getenv("MCP_TRANSPORT", "stdio"),
+        help="Transporte MCP (stdio para local, sse para contêiner/remoto)",
+    )
+    parser.add_argument(
+        "--host",
+        default=os.getenv("MCP_HOST", "0.0.0.0"),
+        help="Host/IP de escuta para SSE/HTTP (padrão: 0.0.0.0)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=int(os.getenv("MCP_PORT", "8000")),
+        help="Porta de escuta para SSE/HTTP (padrão: 8000)",
+    )
+
+    args = parser.parse_args(argv)
+
+    if args.transport in {"sse", "streamable-http"}:
+        mcp.settings.host = args.host
+        mcp.settings.port = args.port
+
+    mcp.run(transport=args.transport)
 
 
 if __name__ == "__main__":

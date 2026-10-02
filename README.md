@@ -135,7 +135,18 @@ examples/             # JSON do enunciado
 
 Conflito: **RECUSADA prevalece sobre REVISÃO HUMANA**; todos os motivos são listados.
 
+## Execução via Docker (Contêiner)
+
+Para rodar o servidor MCP encapsulado em contêiner com suporte a rede (transporte SSE na porta 8000):
+
+```bash
+docker compose up -d --build
+```
+
+O endpoint SSE fica disponível em `http://localhost:8000/sse` (ou no IP público da sua VPS / Cloud).
+
 ## Documentação
 
 - [SKILL.md](SKILL.md) — quando usar a skill
 - [DESIGN.md](DESIGN.md) — revisão humana, dados reais, versionamento e adoção
+- [DEPLOY_ORACLE_CLOUD.md](doc/DEPLOY_ORACLE_CLOUD.md) — guia completo de deploy em contêiner na Oracle Cloud (OCI)
