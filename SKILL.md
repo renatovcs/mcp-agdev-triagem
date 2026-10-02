@@ -25,7 +25,12 @@ Não use para política de crédito real fora deste fluxo — as regras são fic
 
 ### 1. Preferir a tool MCP (determinística)
 
-Chame a tool `triar_proposta` do servidor MCP `triagem-proposta` com o JSON:
+Chame a tool `triar_proposta` do servidor MCP `triagem-proposta`.
+
+- **Endpoint em Nuvem (Claude Web / Remote):** `https://mcp-triagem.anotae.app.br/mcp` (transporte Streamable HTTP, sem autenticação para testes).
+- **Endpoint Local (stdio):** via CLI ou Claude Desktop local.
+
+JSON de entrada esperado:
 
 ```json
 {
